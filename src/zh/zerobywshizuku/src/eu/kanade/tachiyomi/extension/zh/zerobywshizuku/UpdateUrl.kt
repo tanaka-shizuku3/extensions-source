@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.zh.zerobyw
+package eu.kanade.tachiyomi.extension.zh.zerobywshizuku
 
 import android.content.Context
 import android.content.SharedPreferences
