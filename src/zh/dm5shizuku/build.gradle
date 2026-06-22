@@ -1,0 +1,12 @@
+ext {
+    extName = 'Dm5 (Shizuku)'
+    extClass = '.Dm5Shizuku'
+    extVersionCode = 9
+    isNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"
+
+dependencies {
+    implementation(project(':lib:unpacker'))
+}
