@@ -2,8 +2,10 @@ package eu.kanade.tachiyomi.multisrc.mccms
 
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import keiyoushi.utils.tryParse
 import kotlinx.serialization.Serializable
 import org.jsoup.nodes.Entities
+import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -57,14 +59,19 @@ class ChapterDto(val id: String, private val name: String, private val link: Str
 
 @Serializable
 class ChapterDataDto(val id: String, private val addtime: String) {
-    val date get() = dateFormat.parse(addtime)?.time ?: 0
+    val date get() = dateFormat.parse(addtime, ParsePosition(0))?.time ?: dateFormat2.tryParse(addtime)
 
     companion object {
         private val dateFormat by lazy { getDateFormat() }
+        private val dateFormat2 by lazy { getDateFormat2() }
     }
 }
 
 @Serializable
 class ResultDto<T>(val data: T)
 
+@Serializable
+class PageDto(val img: String)
+
 fun getDateFormat() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
+fun getDateFormat2() = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)

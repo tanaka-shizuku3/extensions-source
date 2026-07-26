@@ -128,7 +128,7 @@ abstract class MCCMS : HttpSource() {
     // Don't send referer
     override fun imageRequest(page: Page) = GET(page.imageUrl!!, pcHeaders)
 
-    private inline fun <reified T> Response.parseAs(): T = parseAsRaw<ResultDto<T>>().data
+    inline fun <reified T> Response.parseAs(): T = parseAsRaw<ResultDto<T>>().data
 
     override fun getFilterList(): FilterList {
         val genreData = config.genreData.also { it.fetchGenres(this) }
