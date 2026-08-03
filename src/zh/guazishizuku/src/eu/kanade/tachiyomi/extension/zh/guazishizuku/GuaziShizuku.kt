@@ -35,12 +35,12 @@ abstract class GuaziShizuku : KeiSource() {
     }
 
     override suspend fun getPopularManga(page: Int): MangasPage {
-        val document = client.get("$baseUrl/category.php?sort=hits&page=$page", headers).asJsoup()
+        val document = client.get("$baseUrl/category.php?sort=hits&page=$page").asJsoup()
         return parseManga(document)
     }
 
     override suspend fun getLatestUpdates(page: Int): MangasPage {
-        val document = client.get("$baseUrl/category.php?sort=update&page=$page", headers).asJsoup()
+        val document = client.get("$baseUrl/category.php?sort=update&page=$page").asJsoup()
         return parseManga(document)
     }
 
@@ -49,7 +49,7 @@ abstract class GuaziShizuku : KeiSource() {
             .addQueryParameter("keyword", query)
             .addQueryParameter("page", page.toString())
             .build()
-        val document = client.get(url, headers).asJsoup()
+        val document = client.get(url).asJsoup()
         return parseManga(document)
     }
 
@@ -65,7 +65,7 @@ abstract class GuaziShizuku : KeiSource() {
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
-        val document = client.get("$baseUrl${manga.url}", headers).asJsoup()
+        val document = client.get("$baseUrl${manga.url}").asJsoup()
         manga.apply {
             title = document.selectFirst("#cinema-title")!!.text()
             thumbnail_url = document.selectFirst("img.cinema-cover")?.absUrl("src")
@@ -89,7 +89,7 @@ abstract class GuaziShizuku : KeiSource() {
     }
 
     override suspend fun getPageList(chapter: SChapter): List<Page> {
-        val document = client.get("$baseUrl${chapter.url}", headers).asJsoup()
+        val document = client.get("$baseUrl${chapter.url}").asJsoup()
         return document.select(".reader-images img").mapIndexed { index, it ->
             Page(index, imageUrl = it.absUrl("src"))
         }

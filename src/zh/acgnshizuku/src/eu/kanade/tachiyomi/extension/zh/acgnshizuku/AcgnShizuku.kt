@@ -19,7 +19,7 @@ abstract class AcgnShizuku : KeiSource() {
     override val supportsLatest: Boolean = false
 
     override suspend fun getPopularManga(page: Int): MangasPage {
-        val document = client.get(baseUrl, headers).asJsoup()
+        val document = client.get(baseUrl).asJsoup()
         val mangas = document.select(".tabs-panel li").map {
             SManga.create().apply {
                 setUrlWithoutDomain(it.selectFirst("div a")!!.absUrl("href"))
@@ -33,7 +33,7 @@ abstract class AcgnShizuku : KeiSource() {
     override suspend fun getLatestUpdates(page: Int): MangasPage = throw UnsupportedOperationException()
 
     override suspend fun getSearchMangaList(page: Int, query: String, filters: FilterList): MangasPage {
-        val response = client.get("https://cse.google.com/cse.js?cx=008124722090293425135:k7bx4juliog", headers)
+        val response = client.get("https://cse.google.com/cse.js?cx=008124722090293425135:k7bx4juliog")
         val token = response.body.string().substringAfter("\"cse_token\": \"").substringBefore("\"")
         val url = "https://cse.google.com/cse/element/v1".toHttpUrl().newBuilder()
             .addQueryParameter("start", (page * 10 - 10).toString())
@@ -44,7 +44,7 @@ abstract class AcgnShizuku : KeiSource() {
             .addQueryParameter("callback", "google.search.cse.api2028")
             .addQueryParameter("rurl", baseUrl)
             .build()
-        val json = client.get(url, headers).body.string()
+        val json = client.get(url).body.string()
             .substringAfter("google.search.cse.api2028(").substringBefore(");")
             .parseAs<SearchResults>()
         val mangas = json.results.map {
@@ -69,7 +69,7 @@ abstract class AcgnShizuku : KeiSource() {
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
-        val document = client.get("$baseUrl${manga.url}", headers).asJsoup()
+        val document = client.get("$baseUrl${manga.url}").asJsoup()
         manga.apply {
             title = document.selectFirst("#breadcrumb h1")!!.text()
             thumbnail_url = document.selectFirst("dl.gameshows img")?.absUrl("src")
@@ -93,7 +93,7 @@ abstract class AcgnShizuku : KeiSource() {
     }
 
     override suspend fun getPageList(chapter: SChapter): List<Page> {
-        val document = client.get("$baseUrl${chapter.url}", headers).asJsoup()
+        val document = client.get("$baseUrl${chapter.url}").asJsoup()
         return document.select("#pic_list div.pic").mapIndexed { index, it ->
             Page(index, imageUrl = it.attr("_src"))
         }

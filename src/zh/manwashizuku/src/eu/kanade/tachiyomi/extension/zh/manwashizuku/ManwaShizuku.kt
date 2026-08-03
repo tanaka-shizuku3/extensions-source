@@ -67,7 +67,7 @@ abstract class ManwaShizuku :
     override suspend fun getPopularManga(page: Int): MangasPage {
         val body = MangaPayload(page = PagePayload(page), sort = 3)
             .toJsonRequestBody(json)
-        val response = client.post("$baseUrl/api/cate/", headers, body).parseAs<MangaResponseDto>()
+        val response = client.post("$baseUrl/api/cate/", body).parseAs<MangaResponseDto>()
         val mangas = response.data.list.map { it.toSManga() }
         val pages = (response.data.total + 35) / 36
         return MangasPage(mangas, page < pages)
@@ -76,7 +76,7 @@ abstract class ManwaShizuku :
     override suspend fun getLatestUpdates(page: Int): MangasPage {
         val body = MangaPayload(page = PagePayload(page), sort = 0)
             .toJsonRequestBody(json)
-        val response = client.post("$baseUrl/api/cate/", headers, body).parseAs<MangaResponseDto>()
+        val response = client.post("$baseUrl/api/cate/", body).parseAs<MangaResponseDto>()
         val mangas = response.data.list.map { it.toSManga() }
         val pages = (response.data.total + 35) / 36
         return MangasPage(mangas, page < pages)
@@ -89,7 +89,7 @@ abstract class ManwaShizuku :
             .addQueryParameter("pageSize", "20")
             .addQueryParameter("keyword", query)
             .build()
-        val response = client.get(url, headers).parseAs<MangaResponseDto>()
+        val response = client.get(url).parseAs<MangaResponseDto>()
         val mangas = response.data.list.map { it.toSManga() }
         val pages = (response.data.total + 19) / 20
         return MangasPage(mangas, page < pages)
@@ -108,7 +108,7 @@ abstract class ManwaShizuku :
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
-        val document = client.get("$baseUrl${manga.url}", headers).asJsoup()
+        val document = client.get("$baseUrl${manga.url}").asJsoup()
         manga.apply {
             title = document.selectFirst("#page-title")!!.text()
             thumbnail_url = document.selectFirst("img.comic-cover")?.absUrl("src")
@@ -142,7 +142,7 @@ abstract class ManwaShizuku :
             .addQueryParameter("page_size", "9999")
             .addQueryParameter("image_source", "https://$imageHost")
             .build()
-        val response = client.get(url, headers).parseAs<PageListResponseDto>()
+        val response = client.get(url).parseAs<PageListResponseDto>()
         return response.data.images.mapIndexed { index, it ->
             Page(index, imageUrl = it.url)
         }
