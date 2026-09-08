@@ -6,7 +6,7 @@ plugins {
 
 keiyoushi {
     name = "Manwa (Shizuku)"
-    versionCode = 1
+    versionCode = 2
     contentWarning = ContentWarning.MIXED
     libVersion = "1.6"
 
@@ -15,10 +15,8 @@ keiyoushi {
         name = "漫蛙(雫)"
 
         baseUrl {
-            mirrors(
-                "https://manwali.cc",
-                "https://mwuu.cc",
-                "https://www.manwayi.cc",
+            custom(
+                "https://manwari.cc",
             )
         }
     }

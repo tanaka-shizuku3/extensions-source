@@ -47,8 +47,7 @@ abstract class ManwaShizuku :
 
     private val rewriteOctetStream: Interceptor = Interceptor { chain ->
         val response: Response = chain.proceed(chain.request())
-        val imageHost = preferences.getString(IMAGE_HOST_KEY, IMAGE_HOST_ENTRIES[0])!!.substringBefore(":")
-        if (response.request.url.host != imageHost || !response.request.url.toString().endsWith(".jpg")) {
+        if (!response.request.url.toString().endsWith(".jpg")) {
             return@Interceptor response
         }
         // Decrypt images in mangas
