@@ -77,7 +77,7 @@ class GenreData(hasCategoryPage: Boolean) {
     }
 }
 
-internal fun parseGenres(document: Document, genreData: GenreData) {
+fun parseGenres(document: Document, genreData: GenreData) {
     if (genreData.status == GenreData.FETCHED || genreData.status == GenreData.NO_DATA) return
     val box = document.selectFirst(".cate-selector, .cy_list_l, .ticai, .stui-screen__list")
     if (box == null || "/tags/" in document.location()) {
