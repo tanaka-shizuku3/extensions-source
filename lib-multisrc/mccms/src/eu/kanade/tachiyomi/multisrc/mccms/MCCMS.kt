@@ -116,7 +116,7 @@ abstract class MCCMS : KeiSource() {
     // Don't send referer
     override fun imageRequest(page: Page) = super.imageRequest(page).newBuilder().headers(pcHeaders).build()
 
-    private inline fun <reified T> Response.parseAs(): T = parseAsRaw<ResultDto<T>>().data
+    inline fun <reified T> Response.parseAs(): T = parseAsRaw<ResultDto<T>>().data
 
     override val supportsFilterFetching get() = config.hasCategoryPage
 

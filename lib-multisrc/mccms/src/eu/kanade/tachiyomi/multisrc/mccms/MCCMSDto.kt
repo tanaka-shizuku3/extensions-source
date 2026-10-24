@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.multisrc.mccms
 
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import keiyoushi.utils.tryParseDate
 import keiyoushi.utils.tryParseDateTime
 import kotlinx.serialization.Serializable
 import org.jsoup.nodes.Entities
@@ -56,10 +57,14 @@ class ChapterDto(val id: String, private val name: String, private val link: Str
 
 @Serializable
 class ChapterDataDto(val id: String, private val addtime: String) {
-    val date get() = DATE_FORMAT.tryParseDateTime(addtime)
+    val date get() = if (addtime.length == 10) DATE_FORMAT2.tryParseDate(addtime) else DATE_FORMAT.tryParseDateTime(addtime)
 }
 
 @Serializable
 class ResultDto<T>(val data: T)
 
+@Serializable
+class PageDto(val img: String)
+
 private val DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
+private val DATE_FORMAT2 = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH)
