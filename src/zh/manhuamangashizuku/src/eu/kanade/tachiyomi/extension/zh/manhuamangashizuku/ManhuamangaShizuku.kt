@@ -1,15 +1,13 @@
 package eu.kanade.tachiyomi.extension.zh.manhuamangashizuku
 
 import eu.kanade.tachiyomi.multisrc.mccms.MCCMSWeb
-import eu.kanade.tachiyomi.multisrc.mccms.parseGenres
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.util.asJsoup
 import keiyoushi.annotation.Source
-import okhttp3.Headers
+import keiyoushi.utils.asJsoup
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -19,10 +17,7 @@ import org.jsoup.select.Evaluator
 @Source
 abstract class ManhuamangaShizuku : MCCMSWeb() {
 
-    override fun headersBuilder(): Headers.Builder = super.headersBuilder().set("referer", "$baseUrl/")
-
     override fun parseListing(document: Document): MangasPage {
-        parseGenres(document, config.genreData)
         val mangas = document.select(".comic-item").map(::simpleMangaFromElement)
         val hasNextPage = run {
             // default pagination
@@ -43,9 +38,8 @@ abstract class ManhuamangaShizuku : MCCMSWeb() {
 
     override fun getMangaUrl(manga: SManga) = baseUrl + manga.url
 
-    override fun mangaDetailsParse(response: Response): SManga = run {
+    override fun mangaDetailsParse(document: Document): SManga = run {
         SManga.create().apply {
-            val document = response.asJsoup()
             title = document.selectFirst(".comic-meta-info h1")!!.ownText().drop(1).dropLast(1)
             thumbnail_url = document.selectFirst(".comic-cover-large img")?.attr("src")
             author = document.selectFirst(".stat-item .fa-user")?.nextElementSibling()?.text()?.removePrefix("作者：")
