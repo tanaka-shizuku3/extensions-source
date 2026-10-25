@@ -36,6 +36,7 @@ class LibraryItemsAttributesDto(
     val author: String?,
     val cover: LibraryItemsCoverDto?,
     @SerialName("short_description") val shortDescription: String?,
+    @SerialName("publication_date") val publicationDate: String?,
 )
 
 @Serializable

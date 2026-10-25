@@ -6,15 +6,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
-import eu.kanade.tachiyomi.util.asJsoup
 import keiyoushi.annotation.Source
 import keiyoushi.network.get
 import keiyoushi.source.KeiSource
+import keiyoushi.utils.asJsoup
 import keiyoushi.utils.parseAs
+import keiyoushi.utils.tryParse
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.lang.UnsupportedOperationException
+import kotlin.time.Instant
 
 @Source
 abstract class ReadmooShizuku : KeiSource() {
@@ -31,7 +32,7 @@ abstract class ReadmooShizuku : KeiSource() {
         val libraryItems = client.get("$baseUrl/store/v3/me/library_items?page[count]=1000", getAuthHeaders())
             .parseAs<LibraryItemsResponseDto>().included.filter { it.type == "books" }.associate {
                 it.id to it.attributes
-            }
+            }.toMutableMap()
         val response = client.get("$baseUrl/store/v3/me/installments", getAuthHeaders()).parseAs<InstallmentsResponseDto>()
         val mangas = response.data.map {
             SManga.create().apply {
@@ -39,8 +40,22 @@ abstract class ReadmooShizuku : KeiSource() {
                 title = it.attributes.title
                 val data = it.relationships.books.data.last { libraryItems.containsKey(it.id) }.id
                 thumbnail_url = libraryItems[data]!!.cover!!.large.href
+                it.relationships.books.data.forEach { book ->
+                    libraryItems.remove(book.id)
+                }
             }
-        }
+        }.toMutableList()
+
+        // Some mangas are not in installments
+        mangas.addAll(
+            libraryItems.map {
+                SManga.create().apply {
+                    url = "book:${it.key}"
+                    title = it.value.title!!
+                    thumbnail_url = it.value.cover!!.large.href
+                }
+            },
+        )
         return MangasPage(mangas, false)
     }
 
@@ -64,17 +79,32 @@ abstract class ReadmooShizuku : KeiSource() {
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
-        client.cookieJar
         val libraryItems = client.get("$baseUrl/store/v3/me/library_items?page[count]=1000", getAuthHeaders())
             .parseAs<LibraryItemsResponseDto>().included.filter { it.type == "books" }.associate {
                 it.id to it.attributes
             }
+        if (manga.url.startsWith("book:")) {
+            val item = libraryItems[manga.url.drop(5)]!!
+            val chapter = SChapter.create().apply {
+                url = manga.url.drop(5)
+                name = "Chapter"
+                date_upload = Instant.tryParse(item.publicationDate)
+            }
+            manga.apply {
+                thumbnail_url = item.cover!!.large.href
+                author = item.author
+                artist = author
+                description = item.shortDescription
+            }
+            return SMangaUpdate(manga, listOf(chapter))
+        }
         val response = client.get("$baseUrl/store/v3/me/installments/${manga.url}", getAuthHeaders()).parseAs<MangaResponseDto>()
         val data = response.data.relationships.books.data.filter { libraryItems.containsKey(it.id) }
         val chapters = data.map {
             SChapter.create().apply {
                 url = it.id
                 name = libraryItems[it.id]!!.title!!
+                date_upload = Instant.tryParse(libraryItems[it.id]!!.publicationDate)
             }
         }
         manga.apply {
@@ -91,7 +121,11 @@ abstract class ReadmooShizuku : KeiSource() {
 
     override fun getHomeUrl(): String = "https://next.readmoo.com/read"
 
-    override fun getMangaUrl(manga: SManga): String = "https://next.readmoo.com/read/#/library/installments/${manga.url}"
+    override fun getMangaUrl(manga: SManga): String = if (manga.url.startsWith("book:")) {
+        "https://next.readmoo.com/reader/${manga.url.drop(5)}"
+    } else {
+        "https://next.readmoo.com/read/#/library/installments/${manga.url}"
+    }
 
     override fun getChapterUrl(chapter: SChapter): String = "https://next.readmoo.com/reader/${chapter.url}"
 
