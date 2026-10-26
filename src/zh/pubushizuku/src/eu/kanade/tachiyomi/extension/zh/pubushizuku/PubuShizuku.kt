@@ -6,11 +6,11 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
-import eu.kanade.tachiyomi.util.asJsoup
 import keiyoushi.annotation.Source
 import keiyoushi.network.get
 import keiyoushi.network.post
 import keiyoushi.source.KeiSource
+import keiyoushi.utils.asJsoup
 import keiyoushi.utils.parseAs
 import okhttp3.FormBody
 import okhttp3.HttpUrl
@@ -23,17 +23,31 @@ abstract class PubuShizuku : KeiSource() {
     override val supportsLatest = false
 
     override suspend fun getPopularManga(page: Int): MangasPage {
+        val token = client.cookieJar.loadForRequest("$baseUrl/bookshelf".toHttpUrl())
+            .filter { it.name == "userInfo.token" }.getOrNull(0)?.value ?: throw Exception("Not logged in")
+        val validTime = client.cookieJar.loadForRequest("$baseUrl/bookshelf".toHttpUrl())
+            .filter { it.name == "userInfo.validtime" }.getOrNull(0)?.value ?: throw Exception("Not logged in")
+        val mangas = client.get("$baseUrl/api/mobile/folder/1.0/list-v2?validTime=$validTime&token=$token&isGetPublications=true")
+            .parseAs<FolderListDto>().data.map {
+                SManga.create().apply {
+                    url = it.id.toString()
+                    title = it.name
+                    thumbnail_url = it.products.lastOrNull()?.largeCoverImageUrl
+                }
+            }.toMutableList()
         val document = client.get("$baseUrl/bookshelf").asJsoup()
-        val mangas = document.select(".cover-list article").map {
-            SManga.create().apply {
-                val href = it.selectFirst("a[href^=/epubReader/]")!!.absUrl("href").toHttpUrl()
-                val bookId = href.pathSegments.last()
-                val productId = href.queryParameter("productId")
-                url = "$bookId,$productId"
-                title = it.selectFirst(".info-name h3 a")!!.text()
-                thumbnail_url = it.selectFirst("img")?.attr("src")
-            }
-        }
+        mangas.addAll(
+            document.select(".cover-list article").map {
+                SManga.create().apply {
+                    val href = it.selectFirst("a[href^=/epubReader/]")!!.absUrl("href").toHttpUrl()
+                    val bookId = href.pathSegments.last()
+                    val productId = href.queryParameter("productId")
+                    url = "$bookId,$productId"
+                    title = it.selectFirst(".info-name h3 a")!!.text()
+                    thumbnail_url = it.selectFirst("img")?.attr("src")
+                }
+            },
+        )
         // FIXME: detect hasNextPage when I have more than one page
         return MangasPage(mangas, false)
     }
@@ -59,14 +73,33 @@ abstract class PubuShizuku : KeiSource() {
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
-        val chapter = SChapter.create().apply {
-            url = manga.url
-            name = "Chapter"
+        val chapters = if (manga.url.contains(",")) {
+            listOf(
+                SChapter.create().apply {
+                    url = manga.url
+                    name = "Chapter"
+                },
+            )
+        } else {
+            client.get("$baseUrl/bookshelf?folderId=${manga.url}&type=BOOK_SHELF&orderBy=PUBLISH_DATE&sort=0")
+                .asJsoup().select(".cover-list article").map {
+                    SChapter.create().apply {
+                        val href = it.selectFirst("a[href^=/epubReader/]")!!.absUrl("href").toHttpUrl()
+                        val bookId = href.pathSegments.last()
+                        val productId = href.queryParameter("productId")
+                        url = "$bookId,$productId"
+                        name = it.selectFirst(".info-name h3 a")!!.text()
+                    }
+                }
         }
-        return SMangaUpdate(manga, listOf(chapter))
+        return SMangaUpdate(manga, chapters)
     }
 
-    override fun getMangaUrl(manga: SManga): String = "$baseUrl/reader-service/epub/${manga.url.substringBefore(",")}?productId=${manga.url.substringAfter(",")}"
+    override fun getMangaUrl(manga: SManga): String = if (manga.url.contains(",")) {
+        "$baseUrl/reader-service/epub/${manga.url.substringBefore(",")}?productId=${manga.url.substringAfter(",")}"
+    } else {
+        "$baseUrl/bookshelf?folderId=${manga.url}&type=BOOK_SHELF"
+    }
 
     override fun getChapterUrl(chapter: SChapter): String = "$baseUrl/reader-service/epub/${chapter.url.substringBefore(",")}?productId=${chapter.url.substringAfter(",")}"
 

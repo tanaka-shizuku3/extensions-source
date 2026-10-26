@@ -4,6 +4,15 @@ import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 @Serializable
+class FolderListDto(val data: List<FolderDto>)
+
+@Serializable
+class FolderDto(val name: String, val id: Int, val products: List<ProductDto>)
+
+@Serializable
+class ProductDto(val largeCoverImageUrl: String)
+
+@Serializable
 class PageListDto(
     val indexMapJson: String,
     val directionMapJson: String,
